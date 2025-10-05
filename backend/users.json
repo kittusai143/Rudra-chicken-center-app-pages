@@ -1,0 +1,19 @@
+{
+  "kittusaikiran18@gmail.com": {
+    "password": "Saikittu@12345",
+    "old_passwords": [
+      "Saikittu@143"
+    ]
+  },
+  "user_abc123@twitter.com": {
+    "password": null,
+    "twitter": true,
+    "old_passwords": []
+  },
+  "6303860838": {
+    "email": null,
+    "phone": "6303860838",
+    "password": "Saikittu@143",
+    "old_passwords": []
+  }
+}

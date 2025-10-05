@@ -1,0 +1,14 @@
+.btn-add-order {
+  width: 120px;       /* button width */
+  padding: 6px 12px;  /* button padding */
+  background: linear-gradient(90deg, #9d5df5, #4da6ff);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  transition: 0.3s ease;
+}
+
+.btn-add-order:hover {
+  opacity: 0.9;
+}

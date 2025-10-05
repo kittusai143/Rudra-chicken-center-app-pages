@@ -1,0 +1,170 @@
+/* Background */
+.login-bg {
+  min-height: 100vh;
+  background: linear-gradient(180deg, rgba(181, 123, 238, 0.8), rgba(109, 182, 240, 0.8)),
+              url('https://play-lh.googleusercontent.com/T8x1yYHblanBqDl2u7EPFu6ZSH3twzP_J23h6_3QHuhpb-xmFCDyS5mjFf0dfnMkzQ=w600-h300-pc0xffffff-pd');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: "Poppins", sans-serif;
+  position: relative;
+}
+
+/* Chicken logo */
+.chicken-img {
+  width: 120px;
+  margin-bottom: 8px;
+}
+
+.login-title {
+  color: white;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+/* Card */
+.login-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  padding: 20px !important;
+  max-width: 350px;
+  margin: auto;
+}
+
+/* Labels */
+.login-card label {
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+/* Inputs */
+.login-card .form-control {
+  border-radius: 6px;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+}
+
+.login-card .form-control:focus {
+  border-color: #6db6f0;
+  box-shadow: none;
+}
+
+/* Input validation states */
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.is-valid {
+  border-color: #28a745 !important;
+}
+
+/* Input group icons */
+.input-group-text {
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 6px 0 0 6px;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+}
+
+.password-toggle {
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* Button */
+.btn-signin {
+  background: linear-gradient(90deg, #9d5df5, #4da6ff);
+  border: none;
+  font-size: 0.9rem;
+  padding: 8px 20px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 500;
+  transition: 0.3s ease;
+}
+
+.btn-signin:hover {
+  opacity: 0.9;
+}
+
+/* Footer */
+.login-footer {
+  color: white;
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Social Login */
+.social-login-container {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ✅ Position for green tick */
+.valid-icon {
+  background: transparent !important;
+  border: none !important;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* ✅ Error text */
+.text-danger {
+  font-size: 0.85rem;
+}
+
+/* ✅ Social login button styles */
+.btn-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.btn-icon.google {
+  background-color: #db4437;
+  color: white;
+}
+
+.btn-icon.facebook {
+  background-color: #3b5998;
+  color: white;
+}
+
+.btn-icon.twitter {
+  background-color: #1da1f2;
+  color: white;
+}
+
+/* Optional: hover effects */
+.btn-icon:hover {
+  opacity: 0.9;
+}
+
+/* Tick inside input */
+.valid-icon-inside {
+  position: absolute;
+  right: 35px; /* Adjust to sit before the eye icon */
+  top: 50%;
+  transform: translateY(-50%);
+  color: green;
+  pointer-events: none;
+  font-size: 1rem;
+  z-index: 2;
+}
+
+

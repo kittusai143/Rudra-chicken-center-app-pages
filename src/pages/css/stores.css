@@ -1,0 +1,16 @@
+.card-item {
+  transition: transform 0.2s;
+}
+.card-item:hover {
+  transform: scale(1.02);
+}
+
+.card-img-top {
+  height: 150px;
+  object-fit: cover;
+}
+
+.badge {
+  min-width: 25px;
+  text-align: center;
+}

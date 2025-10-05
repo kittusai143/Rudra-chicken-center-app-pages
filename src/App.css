@@ -1,0 +1,28 @@
+.sidebar {
+  height: 100vh; /* full height */
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.content {
+  margin-left: 16.6667%; /* since sidebar Col xs={2} = 2/12 width */
+  width: 83.3333%;
+  min-height: 100vh;
+  background-color: #fff;
+}
+
+.nav-link.active {
+  background-color: #dc3545;
+  border-radius: 4px;
+}
+
+/* Make sidebar logo bigger and bold */
+.sidebar-logo {
+  font-size: 2.5rem !important;   /* larger size, !important ensures override */
+  font-weight: 800 !important;     /* bold */
+  letter-spacing: 1px;
+  margin-bottom: 1.5rem;           /* adjust spacing below */
+}
+
+

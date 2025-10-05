@@ -1,0 +1,39 @@
+.register-bg {
+  min-height: 100vh;
+  background: 
+    linear-gradient(rgba(181, 123, 238, 0.6), rgba(109, 182, 240, 0.6)),
+    url("https://play-lh.googleusercontent.com/T8x1yYHblanBqDl2u7EPFu6ZSH3twzP_J23h6_3QHuhpb-xmFCDyS5mjFf0dfnMkzQ=w600-h300-pc0xffffff-pd");
+  background-size: cover;       /* fill screen, no gaps */
+  background-position: center;  /* keep centered */
+  background-repeat: no-repeat; /* no repeat */
+  font-family: "Poppins", sans-serif;
+}
+
+
+.register-card {
+  max-width: 380px; /* keep it small like login form */
+  margin: auto;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  background: #fff; /* keep card clear */
+}
+
+.btn-signin {
+  background: linear-gradient(to right, #7b2ff7, #00c6ff);
+  border: none;
+  color: white;
+  font-weight: bold;
+  transition: 0.3s ease-in-out;
+}
+
+.btn-signin:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+
+
+
+
+
+
