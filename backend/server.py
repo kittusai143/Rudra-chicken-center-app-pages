@@ -337,8 +337,20 @@ stores = [
 
 products = [
     {"id": 1, "name": "Whole Chicken With Skin", "category": "With Skin", "price": 250, "stock": 20, "image": "https://freshtogo.in/product_image/1678000570Chicken%20Whole(Full%20Body)%20-%20With%20Skin.jpg"},
-    {"id": 2, "name": "Whole Chicken Without Skin", "category": "Without Skin", "price": 550, "stock": 15, "image": "https://5.imimg.com/data5/UV/EV/MY-35135467/raw-tandoori-chicken-500x500.jpg"},
-    {"id": 3, "name": "Chicken Breast Boneless", "category": "Boneless", "price": 600, "stock": 10, "image": "https://assets.tendercuts.in/product/C/H/594e4559-f6b7-417d-9aac-d0643b5711d3.jpg"}
+    {"id": 2, "name": "Whole Chicken Without Skin", "category": "Without Skin", "price": 450, "stock": 15, "image": "https://5.imimg.com/data5/UV/EV/MY-35135467/raw-tandoori-chicken-500x500.jpg"},
+    {"id": 3, "name": "Chicken Breast Boneless", "category": "Boneless", "price": 600, "stock": 10, "image": "https://assets.tendercuts.in/product/C/H/594e4559-f6b7-417d-9aac-d0643b5711d3.jpg"},
+    {"id": 4, "name": "Chicken Drumsticks", "category": "Leg Pieces", "price": 320, "stock": 25, "image": "https://media.istockphoto.com/id/629722566/photo/baked-chicken-drumstick.jpg?s=612x612&w=0&k=20&c=F33WyIcFQNMYAhQ-DyCIaMXFj8sKF7m-zyhBNKBtzdI="},
+    {"id": 5, "name": "Chicken Wings", "category": "Wings", "price": 280, "stock": 30, "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ05vcTAeQ1YGKA8wCAVSrFA4_DU4B9Aw7d1w&s"},
+    {"id": 6, "name": "Chicken Thigh Boneless", "category": "Boneless", "price": 550, "stock": 12, "image": "https://www.bbassets.com/media/uploads/p/xl/40227607_1-fresho-chicken-thigh-boneless-without-skin-soft-tender.jpg"},
+    {"id": 7, "name": "Chicken Liver", "category": "Offal", "price": 180, "stock": 35, "image": "https://img.freepik.com/premium-photo/uncooked-raw-chicken-liver-poultry-offals-steel-plate-black-background-top-view_89816-42963.jpg"},
+    {"id": 8, "name": "Chicken Mince (Keema)", "category": "Mince", "price": 400, "stock": 18, "image": "https://5.imimg.com/data5/SELLER/Default/2020/12/WN/QQ/TI/2970290/frozen-spicy-chicken-keema.jpg"},
+    {"id": 9, "name": "Chicken Leg (Curry Cut)", "category": "Curry Cut", "price": 350, "stock": 20, "image": "https://5.imimg.com/data5/SELLER/Default/2021/5/ER/OQ/YM/84743643/curry-cut-chicken-500x500.jpg"},
+    {"id": 10, "name": "Chicken Boneless Cubes", "category": "Boneless", "price": 580, "stock": 15, "image": "https://5.imimg.com/data5/ECOM/Default/2023/7/324897114/QS/CQ/JH/192884303/1677138518710-sku-0155-0-500x500.jpeg"},
+    {"id": 11, "name": "Chicken Lollipop", "category": "Party Cuts", "price": 420, "stock": 22, "image": "https://cdn.prod.website-files.com/654369dcffba1c0eb478187e/676467ea7415e6e5715affd9_IMG_2965.jpeg"},
+    {"id": 12, "name": "Chicken Curry Cut (Small Pieces)", "category": "Curry Cut", "price": 300, "stock": 28, "image": "https://godavaricuts.com/cdn/shop/files/Godavari-Cuts-Day-1-_60-of-65_1_1a645364-e537-47cf-a978-4c1e7101ed5f.jpg?v=1682943338"},
+    {"id": 13, "name": "Chicken Gizzard", "category": "Offal", "price": 160, "stock": 40, "image": "https://frozenlivestockexperters.com/wp-content/uploads/2024/12/1670731017Fresh_Chicken_Gizzard.jpg"},
+    {"id": 14, "name": "Chicken Soup Bones", "category": "Bones", "price": 200, "stock": 25, "image": "https://www.fooppers.in/wp-content/uploads/2021/11/Chicken-Soup-Bones.jpg"},
+    {"id": 15, "name": "Chicken Cutlet (Ready to Cook)", "category": "Ready to Cook", "price": 450, "stock": 14, "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZ09WJoS49CsQdXWvRsCAFRcIG1D_iQ54cdg&s"},
 ]
 
 @app.route("/api/stores", methods=["GET"])

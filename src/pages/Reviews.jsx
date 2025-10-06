@@ -19,6 +19,8 @@ const Reviews = () => {
     comment: "",
   });
 
+  const [errors, setErrors] = useState({}); // ✅ validation errors
+
   useEffect(() => {
     fetch("http://localhost:5000/api/reviews")
       .then((res) => res.json())
@@ -26,11 +28,22 @@ const Reviews = () => {
       .catch((err) => console.error("Failed to load reviews", err));
   }, []);
 
+  const validate = () => {
+    const newErrors = {};
+    if (!newReview.customer.trim()) newErrors.customer = "Customer name is required";
+    if (!newReview.product.trim()) newErrors.product = "Product name is required";
+    if (newReview.rating === 0) newErrors.rating = "Rating is required";
+    if (!newReview.comment.trim()) newErrors.comment = "Feedback comment is required";
+    return newErrors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newReview.customer || !newReview.product || !newReview.rating) {
-      alert("Please fill all required fields!");
-      return;
+    const validationErrors = validate();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return; // Stop submission if errors exist
     }
 
     const res = await fetch("http://localhost:5000/api/reviews", {
@@ -43,6 +56,7 @@ const Reviews = () => {
     if (res.ok) {
       setReviews([...reviews, newReview]);
       setNewReview({ customer: "", product: "", rating: 0, comment: "" });
+      setErrors({});
       alert("✅ Thank you for your feedback!");
     } else {
       alert(data.error || "Failed to submit review");
@@ -51,6 +65,7 @@ const Reviews = () => {
 
   const handleStarClick = (rating) => {
     setNewReview({ ...newReview, rating });
+    setErrors({ ...errors, rating: "" }); // clear rating error when clicked
   };
 
   return (
@@ -60,7 +75,6 @@ const Reviews = () => {
       {/* Review Form */}
       <Card className="p-3 shadow-sm mb-4">
         <Form onSubmit={handleSubmit}>
-          {/* Two inputs per row */}
           <Row className="mb-2">
             <Col md={6}>
               <Form.Group controlId="customer">
@@ -73,7 +87,13 @@ const Reviews = () => {
                   onChange={(e) =>
                     setNewReview({ ...newReview, customer: e.target.value })
                   }
+                  isInvalid={!!errors.customer}
                 />
+                {errors.customer && (
+                  <Form.Text className="text-danger small">
+                    {errors.customer}
+                  </Form.Text>
+                )}
               </Form.Group>
             </Col>
 
@@ -88,12 +108,18 @@ const Reviews = () => {
                   onChange={(e) =>
                     setNewReview({ ...newReview, product: e.target.value })
                   }
+                  isInvalid={!!errors.product}
                 />
+                {errors.product && (
+                  <Form.Text className="text-danger small">
+                    {errors.product}
+                  </Form.Text>
+                )}
               </Form.Group>
             </Col>
           </Row>
 
-          {/* Rating Stars */}
+          {/* Rating */}
           <Form.Group className="mb-2">
             <Form.Label className="small fw-semibold">Rate the Product</Form.Label>
             <div>
@@ -110,28 +136,39 @@ const Reviews = () => {
                 />
               ))}
             </div>
+            {errors.rating && (
+              <Form.Text className="text-danger small">
+                {errors.rating}
+              </Form.Text>
+            )}
           </Form.Group>
 
           <Row className="mb-3">
-              <Col md={6}> {/* smaller width column */}
-                <Form.Group controlId="comment">
-                  <Form.Label className="small fw-semibold">Feedback</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3} // keeps it a proper textarea
-                    placeholder="Write your experience..."
-                    value={newReview.comment}
-                    onChange={(e) =>
-                      setNewReview({ ...newReview, comment: e.target.value })
-                    }
-                    size="sm"
-                    style={{ fontSize: "0.85rem", padding: "6px 8px" }}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            
-          {/* Submit button aligned to right */}
+            <Col md={6}>
+              <Form.Group controlId="comment">
+                <Form.Label className="small fw-semibold">Feedback</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  placeholder="Write your experience..."
+                  value={newReview.comment}
+                  onChange={(e) =>
+                    setNewReview({ ...newReview, comment: e.target.value })
+                  }
+                  isInvalid={!!errors.comment}
+                  size="sm"
+                  style={{ fontSize: "0.85rem", padding: "6px 8px" }}
+                />
+                {errors.comment && (
+                  <Form.Text className="text-danger small">
+                    {errors.comment}
+                  </Form.Text>
+                )}
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Submit */}
           <div className="d-flex justify-content-end">
             <Button size="sm" variant="success" type="submit">
               Submit
