@@ -205,22 +205,57 @@ const Cart = ({ cart, addToCart, removeFromCart, clearCart }) => {
   );
   const total = subtotal + shipping;
 
-  const handleCheckout = () => {
-    const hasErrors = Object.values(errors).some((msg) => msg);
-    const hasEmpty = Object.values(customerDetails).some((val) => !val);
-    if (hasErrors || hasEmpty) {
-      alert("⚠️ Please fix validation errors before checkout.");
+  const handleCheckout = async () => {
+  const hasErrors = Object.values(errors).some((msg) => msg);
+  const hasEmpty = Object.values(customerDetails).some((val) => !val);
+  if (hasErrors || hasEmpty) {
+    alert("⚠️ Please fix validation errors before checkout.");
+    return;
+  }
+
+  try {
+    // Send order to backend
+    const response = await fetch("http://localhost:5000/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: `ORD-${Date.now()}`,
+        customerName: customerDetails.name,
+        customerMobile: customerDetails.phone,
+        customerEmail: customerDetails.email,
+        customerAddress: `${customerDetails.address}, ${customerDetails.city}, ${customerDetails.state}, ${customerDetails.pincode}`,
+        productName: cartItems.map(i => i.name).join(", "),
+        kgs: cartItems.reduce((sum, i) => sum + i.qty, 0),
+        price: total,
+        status: "Pending",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(`❌ Failed to place order: ${data.error}`);
       return;
     }
 
-    alert(
-      `✅ Order Placed!\nCustomer: ${customerDetails.name}\nCity: ${customerDetails.city}\nPincode: ${customerDetails.pincode}\nTotal: ₹${total.toFixed(
-        2
-      )}`
-    );
+    alert(`✅ Order Placed Successfully!\nOrder ID: ${data.order.id}\nDelivery Address: ${data.order.customerAddress}`);
 
     clearCart();
-  };
+    setCustomerDetails({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      state: "",
+      city: "",
+      pincode: "",
+    });
+  } catch (err) {
+    console.error(err);
+    alert("❌ Something went wrong. Please try again.");
+  }
+};
+
 
   return (
     <Container className="py-4">
