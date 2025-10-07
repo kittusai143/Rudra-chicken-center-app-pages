@@ -8,7 +8,7 @@ import {
   Col,
   Card,
 } from "react-bootstrap";
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 
 const Reviews = () => {
   const [reviews, setReviews] = useState([]);
@@ -19,7 +19,7 @@ const Reviews = () => {
     comment: "",
   });
 
-  const [errors, setErrors] = useState({}); // ✅ validation errors
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetch("http://localhost:5000/api/reviews")
@@ -30,10 +30,13 @@ const Reviews = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!newReview.customer.trim()) newErrors.customer = "Customer name is required";
-    if (!newReview.product.trim()) newErrors.product = "Product name is required";
+    if (!newReview.customer.trim())
+      newErrors.customer = "Customer name is required";
+    if (!newReview.product.trim())
+      newErrors.product = "Product name is required";
     if (newReview.rating === 0) newErrors.rating = "Rating is required";
-    if (!newReview.comment.trim()) newErrors.comment = "Feedback comment is required";
+    if (!newReview.comment.trim())
+      newErrors.comment = "Feedback comment is required";
     return newErrors;
   };
 
@@ -41,10 +44,7 @@ const Reviews = () => {
     e.preventDefault();
     const validationErrors = validate();
     setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return; // Stop submission if errors exist
-    }
+    if (Object.keys(validationErrors).length > 0) return;
 
     const res = await fetch("http://localhost:5000/api/reviews", {
       method: "POST",
@@ -63,9 +63,24 @@ const Reviews = () => {
     }
   };
 
-  const handleStarClick = (rating) => {
-    setNewReview({ ...newReview, rating });
-    setErrors({ ...errors, rating: "" }); // clear rating error when clicked
+  // ⭐ Handle half-star click logic
+  const handleStarClick = (event, index) => {
+    const { left, width } = event.target.getBoundingClientRect();
+    const clickX = event.clientX - left;
+    const clickedHalf = clickX < width / 2 ? 0.5 : 1;
+    const newRating = index + clickedHalf;
+    setNewReview({ ...newReview, rating: newRating });
+    setErrors({ ...errors, rating: "" });
+  };
+
+  // ⭐ Render stars including halves
+  const renderStars = (rating, starSize = 30) => {
+    return [1, 2, 3, 4, 5].map((i) => {
+      if (rating >= i) return <FaStar key={i} size={starSize} color="gold" />;
+      else if (rating >= i - 0.5)
+        return <FaStarHalfAlt key={i} size={starSize} color="gold" />;
+      else return <FaRegStar key={i} size={starSize} color="lightgray" />;
+    });
   };
 
   return (
@@ -119,30 +134,26 @@ const Reviews = () => {
             </Col>
           </Row>
 
-          {/* Rating */}
+          {/* ⭐ Rating */}
           <Form.Group className="mb-2">
             <Form.Label className="small fw-semibold">Rate the Product</Form.Label>
             <div>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <FaStar
-                  key={star}
-                  size={20}
-                  onClick={() => handleStarClick(star)}
-                  style={{
-                    cursor: "pointer",
-                    color: newReview.rating >= star ? "gold" : "lightgray",
-                    marginRight: "4px",
-                  }}
-                />
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  style={{ cursor: "pointer", marginRight: "5px" }}
+                  onClick={(e) => handleStarClick(e, i)}
+                >
+                  {renderStars(newReview.rating)[i]}
+                </span>
               ))}
             </div>
             {errors.rating && (
-              <Form.Text className="text-danger small">
-                {errors.rating}
-              </Form.Text>
+              <Form.Text className="text-danger small">{errors.rating}</Form.Text>
             )}
           </Form.Group>
 
+          {/* Feedback */}
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group controlId="comment">
@@ -168,7 +179,6 @@ const Reviews = () => {
             </Col>
           </Row>
 
-          {/* Submit */}
           <div className="d-flex justify-content-end">
             <Button size="sm" variant="success" type="submit">
               Submit
@@ -190,15 +200,7 @@ const Reviews = () => {
           <ListGroup.Item key={idx} className="mb-2 shadow-sm rounded p-2">
             <div className="d-flex justify-content-between align-items-center">
               <strong className="small">{r.customer}</strong>
-              <span>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FaStar
-                    key={star}
-                    size={16}
-                    color={r.rating >= star ? "gold" : "lightgray"}
-                  />
-                ))}
-              </span>
+              <span>{renderStars(r.rating)}</span>
             </div>
             <div className="text-muted small">
               <em>{r.product}</em>
