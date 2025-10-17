@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import smtplib
@@ -6,45 +6,64 @@ from email.mime.text import MIMEText
 import os, random, re
 from dotenv import load_dotenv
 from twilio.rest import Client
+from werkzeug.utils import secure_filename
 
 # ============================================================
 # 🔧 Load environment variables
 # ============================================================
-load_dotenv()
-
 app = Flask(__name__)
 CORS(app)
 
-# ---------------- Database Setup ----------------
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'   # stored in local file
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+@app.route("/")
+def home():
+    return "✅ Flask backend is running successfully!"
+
+
+
+# ============================================================
+# 🗂 Instance + Upload Folder Setup
+# ============================================================
+BASE_DIR = os.path.dirname(__file__)
+INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# ============================================================
+# 🧱 Database Setup
+# ============================================================
+db_path = os.path.join(INSTANCE_DIR, "app.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-# ---------------- Email / Twilio ----------------
+# ============================================================
+# 📧 Email / Twilio Config
+# ============================================================
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
-
 TWILIO_SID = os.getenv("TWILIO_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE = os.getenv("TWILIO_PHONE")
 
-twilio_client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
+twilio_client = None
+if all([TWILIO_SID, TWILIO_AUTH_TOKEN]):
+    twilio_client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
 
 # ============================================================
-# 🟢 Database Models
+# 🧩 Models
 # ============================================================
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     identifier = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    old_passwords = db.Column(db.Text, default="")         # comma-separated old passwords
-    reset_otp = db.Column(db.String(10), nullable=True)
+    old_passwords = db.Column(db.Text, default="")
+    reset_otp = db.Column(db.String(10))
+    profile_file = db.Column(db.String(255))
 
     def as_dict(self):
-        return {
-            "id": self.id,
-            "identifier": self.identifier
-        }
+        return {"id": self.id, "identifier": self.identifier}
+
 
 class Order(db.Model):
     id = db.Column(db.String(50), primary_key=True)
@@ -70,6 +89,7 @@ class Order(db.Model):
             "status": self.status,
         }
 
+
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
@@ -86,30 +106,27 @@ class Customer(db.Model):
             "email": self.email,
         }
 
-# Create DB tables
+
 with app.app_context():
     db.create_all()
 
 # ============================================================
-# 🔑 Helpers
+# 🧠 Helpers
 # ============================================================
 def is_valid_email(identifier):
     return re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", identifier)
 
+
 def is_valid_phone(identifier):
     return re.match(r"^[0-9]{10}$", identifier)
 
-def geocode_address(address):
-    """Return (lat, lng) tuple from address using Google Maps API"""
-    try:
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={GOOGLE_MAPS_API_KEY}"
-        res = requests.get(url).json()
-        if res["results"]:
-            loc = res["results"][0]["geometry"]["location"]
-            return loc["lat"], loc["lng"]
-    except Exception as e:
-        print(f"Geocoding error: {e}")
-    return None, None
+
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 # ============================================================
 # 🔑 AUTH ROUTES
@@ -126,15 +143,14 @@ def register():
     if not (is_valid_email(identifier) or is_valid_phone(identifier)):
         return jsonify({"error": "Enter valid email or 10-digit phone number"}), 400
 
-    existing_user = User.query.filter_by(identifier=identifier).first()
-    if existing_user:
-        return jsonify({"error": "This email or phone number is already registered. Please login instead."}), 409
+    if User.query.filter_by(identifier=identifier).first():
+        return jsonify({"error": "This email or phone number is already registered."}), 409
 
     new_user = User(identifier=identifier, password=password)
     db.session.add(new_user)
     db.session.commit()
-
     return jsonify({"message": "✅ Registered successfully!"}), 201
+
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -148,17 +164,19 @@ def login():
     user = User.query.filter_by(identifier=identifier).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
-
     if user.password != password:
         return jsonify({"error": "Invalid password"}), 400
 
     return jsonify({"message": "✅ Login successful!", "user": user.as_dict()})
 
+
+# ============================================================
+# 🔁 PASSWORD RESET ROUTES
+# ============================================================
 @app.route("/send-reset", methods=["POST"])
 def send_reset():
     data = request.get_json()
     identifier = data.get("identifier")
-
     if not identifier:
         return jsonify({"error": "Email or Phone required"}), 400
 
@@ -166,35 +184,39 @@ def send_reset():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
+    # If email, send link
     if is_valid_email(identifier):
-        reset_link = f"http://localhost:5173/reset-password?identifier={identifier}"
+        reset_link = f"/reset-password?identifier={identifier}"
         msg = MIMEText(f"Click this link to reset your password: {reset_link}")
         msg["Subject"] = "Password Reset"
         msg["From"] = SENDER_EMAIL
         msg["To"] = identifier
-
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                 server.login(SENDER_EMAIL, SENDER_PASSWORD)
                 server.sendmail(SENDER_EMAIL, identifier, msg.as_string())
-            return jsonify({"message": f"📩 Reset link sent to {identifier}"})
+            return jsonify({"message": f"📩 Reset link sent to {identifier}"}), 200
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": f"Email send failed: {str(e)}"}), 500
 
+    # If phone, send OTP
     if is_valid_phone(identifier):
         otp = str(random.randint(100000, 999999))
         user.reset_otp = otp
         db.session.commit()
+        if twilio_client:
+            try:
+                twilio_client.messages.create(
+                    body=f"Your OTP for password reset is: {otp}",
+                    from_=TWILIO_PHONE,
+                    to=f"+91{identifier}",
+                )
+                return jsonify({"message": f"📱 OTP sent to {identifier}"}), 200
+            except Exception as e:
+                return jsonify({"error": f"Failed to send SMS: {str(e)}"}), 500
+        else:
+            return jsonify({"error": "Twilio not configured"}), 500
 
-        try:
-            twilio_client.messages.create(
-                body=f"Your OTP for password reset is: {otp}",
-                from_=TWILIO_PHONE,
-                to=f"+91{identifier}"
-            )
-            return jsonify({"message": f"📱 OTP sent to {identifier}"})
-        except Exception as e:
-            return jsonify({"error": f"Failed to send SMS: {str(e)}"}), 500
 
 @app.route("/verify-otp", methods=["POST"])
 def verify_otp():
@@ -208,13 +230,13 @@ def verify_otp():
     user = User.query.filter_by(identifier=identifier).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
-
-    if user.reset_otp == otp:
-        user.reset_otp = None
-        db.session.commit()
-        return jsonify({"message": "✅ OTP verified successfully!"})
-    else:
+    if user.reset_otp != otp:
         return jsonify({"error": "❌ Invalid OTP"}), 400
+
+    user.reset_otp = None
+    db.session.commit()
+    return jsonify({"message": "✅ OTP verified successfully!"})
+
 
 @app.route("/reset-password", methods=["POST"])
 def reset_password():
@@ -230,11 +252,10 @@ def reset_password():
         return jsonify({"error": "User not found"}), 404
 
     old_pw_list = user.old_passwords.split(",") if user.old_passwords else []
-
-    if user.password == new_password:
-        return jsonify({"error": "⚠️ New password cannot be the same as the old password"}), 400
+    if new_password == user.password:
+        return jsonify({"error": "⚠️ New password cannot be the same as old"}), 400
     if new_password in old_pw_list:
-        return jsonify({"error": "⚠️ You cannot reuse an old password"}), 400
+        return jsonify({"error": "⚠️ Cannot reuse an old password"}), 400
 
     old_pw_list.append(user.password)
     user.password = new_password
@@ -243,8 +264,9 @@ def reset_password():
 
     return jsonify({"message": "✅ Password changed successfully!"})
 
+
 # ============================================================
-# 📦 DATA ROUTES
+# 📦 ORDER + CUSTOMER ROUTES
 # ============================================================
 @app.route("/api/orders", methods=["GET", "POST"])
 def handle_orders():
@@ -265,70 +287,102 @@ def handle_orders():
             db.session.add(order)
             db.session.commit()
 
-            # Add customer automatically if not exists
-            existing_customer = Customer.query.filter_by(phone=data["customerMobile"]).first()
-            if not existing_customer:
+            # Add new customer if not exists
+            if not Customer.query.filter_by(phone=data["customerMobile"]).first():
                 customer = Customer(
                     name=data["customerName"],
                     address=data["customerAddress"],
                     phone=data["customerMobile"],
-                    email=data["customerEmail"]
+                    email=data["customerEmail"],
                 )
                 db.session.add(customer)
                 db.session.commit()
 
-            return jsonify({"message": "✅ Order & Customer added successfully!", "order": order.as_dict()}), 201
+            return jsonify({"message": "✅ Order added successfully!", "order": order.as_dict()}), 201
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     orders = Order.query.all()
     return jsonify([o.as_dict() for o in orders])
 
+
 @app.route("/api/customers", methods=["GET"])
 def get_customers():
     customers = Customer.query.all()
     return jsonify([c.as_dict() for c in customers])
 
+
 # ============================================================
-# Dummy arrays for drivers, reviews, mapview
+# 🖼 FILE UPLOAD & PROFILE UPDATE
+# ============================================================
+@app.route("/upload-profile", methods=["POST"])
+def upload_profile():
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files["file"]
+    identifier = request.form.get("identifier")
+
+    if not file or file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Invalid file type (JPG, PNG, PDF only)"}), 400
+
+    user = User.query.filter_by(identifier=identifier).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    file.save(filepath)
+    user.profile_file = filename
+    db.session.commit()
+
+    return jsonify({"message": "✅ File uploaded successfully!", "file": filename})
+
+
+@app.route("/update-profile", methods=["POST"])
+def update_profile():
+    data = request.get_json()
+    current_identifier = data.get("currentIdentifier")
+    new_identifier = data.get("identifier")
+    new_password = data.get("password")
+
+    if not current_identifier:
+        return jsonify({"error": "Current identifier missing"}), 400
+
+    user = User.query.filter_by(identifier=current_identifier).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Update identifier
+    if new_identifier and new_identifier != current_identifier:
+        if User.query.filter_by(identifier=new_identifier).first():
+            return jsonify({"error": "Identifier already taken"}), 400
+        user.identifier = new_identifier
+
+    # Update password
+    if new_password and new_password.strip():
+        if new_password == user.password:
+            return jsonify({"error": "New password must differ"}), 400
+        old_pw_list = user.old_passwords.split(",") if user.old_passwords else []
+        if new_password in old_pw_list:
+            return jsonify({"error": "Cannot reuse old password"}), 400
+        old_pw_list.append(user.password)
+        user.password = new_password
+        user.old_passwords = ",".join(old_pw_list)
+
+    db.session.commit()
+    return jsonify({"message": "✅ Profile updated successfully!"})
+
+
+# ============================================================
+# 🏪 DUMMY DATA ROUTES (Stores, Products, Drivers, Reviews)
 # ============================================================
 drivers, reviews, mapview = [], [], []
 
-@app.route("/api/drivers", methods=["GET", "POST"])
-def handle_drivers():
-    if request.method == "POST":
-        new_driver = request.get_json()
-        drivers.append(new_driver)
-        return jsonify({"message": "✅ Driver added successfully!", "driver": new_driver}), 201
-    return jsonify(drivers)
-
-@app.route("/api/stores", methods=["GET", "POST"])
-def handle_stores():
-    if request.method == "POST":
-        new_store = request.get_json()
-        stores.append(new_store)
-        return jsonify({"message": "✅ Store added successfully!", "store": new_store}), 201
-    return jsonify(stores)
-
-@app.route("/api/reviews", methods=["GET", "POST"])
-def handle_reviews():
-    if request.method == "POST":
-        new_review = request.get_json()
-        reviews.append(new_review)
-        return jsonify({"message": "✅ Review added successfully!", "review": new_review}), 201
-    return jsonify(reviews)
-
-@app.route("/api/mapview", methods=["GET", "POST"])
-def handle_mapview():
-    if request.method == "POST":
-        new_marker = request.get_json()
-        mapview.append(new_marker)
-        return jsonify({"message": "✅ Marker added successfully!", "marker": new_marker}), 201
-    return jsonify(mapview)
-
-# ============================================================
-# Dummy stores and products
-# ============================================================
+# Stores & products from old backend
 stores = [
     {"id": 1, "name": "Fresh Chicken Breast", "desc": "Tender chicken breast pieces, perfect for grilling.", "price": 250, "image": "https://media.istockphoto.com/id/492787098/photo/chicken-breasts-on-cutting-board.jpg?s=612x612&w=0&k=20&c=l1O94YCSRMUgj58WVPpOQFzuzRVwFHDeL6GF6dXFsFg="},
     {"id": 2, "name": "Whole Chicken", "desc": "Fresh whole chicken, ideal for roasting.", "price": 400, "image": "https://t3.ftcdn.net/jpg/02/00/03/68/360_F_200036893_dw1iYWEjrODZjlor0LzBMLRhyBJKhEmB.jpg"},
@@ -346,25 +400,76 @@ products = [
     {"id": 8, "name": "Chicken Gizzard 1kg", "category": "Offal", "price": 280, "stock": 40, "image": "https://frozenlivestockexperters.com/wp-content/uploads/2024/12/1670731017Fresh_Chicken_Gizzard.jpg"},
     {"id": 9, "name": "Chicken Soup Bones 1kg", "category": "Bones", "price": 200, "stock": 25, "image": "https://www.fooppers.in/wp-content/uploads/2021/11/Chicken-Soup-Bones.jpg"},
     {"id": 10, "name": "Live Broiler Chickens 1kg", "category": "Live Bird", "price": 150, "stock": 25, "image": "https://khpet.com/cdn/shop/articles/White-Leghorn-Rooster-v2_800x800.jpg?v=1593020040"},
-    {"id": 11, "name": "Desimurgei 1kg", "category": "Desimurgei", "price": 500, "stock": 25, "image": "https://images.squarespace-cdn.com/content/v1/5ea97f3fd652bf2c1c1aeb7e/1598453066763-JQSB3G7OZLOTCHUVKHFP/39-Cream_Legbar-chickens.jpg"}, 
-    {"id": 12, "name": "Chicken Curry 1kg", "category": "Chicken", "price": 400, "stock": 25, "image": "https://gypsyplate.com/wp-content/uploads/2024/02/chicken-curry_square.jpg"}, 
+    {"id": 11, "name": "Desimurgei 1kg", "category": "Desimurgei", "price": 500, "stock": 25, "image": "https://images.squarespace-cdn.com/content/v1/5ea97f3fd652bf2c1c1aeb7e/1598453066763-JQSB3G7OZLOTCHUVKHFP/39-Cream_Legbar-chickens.jpg"},
+    {"id": 12, "name": "Chicken Curry 1kg", "category": "Chicken", "price": 400, "stock": 25, "image": "https://gypsyplate.com/wp-content/uploads/2024/02/chicken-curry_square.jpg"},
 ]
 
-@app.route("/api/stores", methods=["GET"])
-def get_stores():
+
+@app.route("/api/drivers", methods=["GET", "POST"])
+def handle_drivers():
+    if request.method == "POST":
+        new_driver = request.get_json()
+        drivers.append(new_driver)
+        return jsonify({"message": "✅ Driver added!", "driver": new_driver}), 201
+    return jsonify(drivers)
+
+
+@app.route("/api/stores", methods=["GET", "POST"])
+def handle_stores():
+    if request.method == "POST":
+        new_store = request.get_json()
+        stores.append(new_store)
+        return jsonify({"message": "✅ Store added!", "store": new_store}), 201
     return jsonify(stores)
+
 
 @app.route("/api/products", methods=["GET", "POST"])
 def handle_products():
-    global products
     if request.method == "POST":
         new_product = request.get_json()
         products.append(new_product)
-        return jsonify({"message": "✅ Product added successfully!", "product": new_product}), 201
+        return jsonify({"message": "✅ Product added!", "product": new_product}), 201
     return jsonify(products)
 
+@app.route("/api/user/update", methods=["POST"])
+def update_user():
+    first_name = request.form.get("firstName")
+    last_name = request.form.get("lastName")
+    email = request.form.get("email")
+    phone = request.form.get("phone")
+    file = request.files.get("profilePic")
+
+    profile_url = None
+    if file:
+        filename = secure_filename(file.filename)
+        save_path = os.path.join("uploads", filename)
+        file.save(save_path)
+        profile_url = f"http://localhost:5000/uploads/{filename}"
+
+    updated_user = {
+        "firstName": first_name,
+        "lastName": last_name,
+        "email": email,
+        "phone": phone,
+        "profilePic": profile_url,
+    }
+
+    return jsonify(updated_user)
+
+
 # ============================================================
-# Run Server
+# 🧭 Serve React Frontend
+# ============================================================
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path and os.path.exists(os.path.join("dist", path)):
+        return send_from_directory("dist", path)
+    return send_from_directory("dist", "index.html")
+
+
+# ============================================================
+# 🚀 Run Server
 # ============================================================
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

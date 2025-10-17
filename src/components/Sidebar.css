@@ -1,0 +1,64 @@
+/* sidebar.css */
+
+/* Light maroon background */
+.bg-maroon {
+  background-color: #b33a3a !important; /* ✅ light maroon */
+}
+
+.sidebar {
+  width: 240px;
+  background-color: #b33a3a; /* ✅ light maroon */
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .nav-link {
+  padding: 10px 20px;
+  font-size: 15px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+.sidebar-header h4 {
+  font-size: 26px;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-offcanvas {
+  width: 240px !important;
+  background-color: #b33a3a !important; /* ✅ same light maroon */
+  color: white;
+}
+
+.offcanvas .nav-link {
+  padding: 10px 15px;
+  color: white !important;
+}
+
+.mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+}
+
+@media (min-width: 768px) {
+  .content {
+    margin-left: 240px;
+  }
+}
+
+@media (max-width: 767px) {
+  .content {
+    margin-left: 0;
+  }
+}

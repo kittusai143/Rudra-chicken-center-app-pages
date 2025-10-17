@@ -1,26 +1,12 @@
 // App.jsx
 import React, { useState, useEffect } from "react";
-import {
-  Routes,
-  Route,
-  NavLink,
-  Navigate,
-  Outlet,
-  useNavigate,
-} from "react-router-dom";
-import {
-  Container,
-  Row,
-  Col,
-  Form,
-  Image,
-  Button,
-  Badge,
-} from "react-bootstrap";
+import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Container, Row, Col, Form, Image, Badge } from "react-bootstrap";
 import { FaShoppingCart } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
+import Sidebar from "./components/Sidebar";
 import Orders from "./pages/Orders";
 import Customers from "./pages/Customers";
 import Stores from "./pages/Stores";
@@ -29,75 +15,26 @@ import Products from "./pages/Products";
 import MapView from "./pages/MapView";
 import Drivers from "./pages/Drivers";
 import Cart from "./pages/Cart";
-
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ResetPassword from "./components/ResetPassword";
 import ForgotPassword from "./components/ForgotPassword";
 import VerifyOtp from "./components/VerifyOtp";
+import Settings from "./pages/Settings"; // adjust path if needed
 
-function DashboardLayout({ onLogout, cart, addToCart, removeFromCart }) {
-  const navigate = useNavigate();
-  const totalItems = Object.values(cart).reduce(
-    (sum, item) => sum + item.qty,
-    0
-  );
+
+function DashboardLayout({ onLogout, cart, navigateToCart }) {
+  const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
 
   return (
     <Row className="g-0">
-      {/* Sidebar */}
-      <Col xs={2} className="bg-dark text-white sidebar d-flex flex-column p-3">
-        <h4 className="sidebar-logo text-danger mb-4">E-Meat</h4>
-        <nav className="flex-grow-1">
-          <ul className="nav flex-column">
-            <li className="nav-item">
-              <NavLink to="/orders" className="nav-link text-white">
-                Orders
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/customers" className="nav-link text-white">
-                Customers
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/drivers" className="nav-link text-white">
-                Drivers
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/map" className="nav-link text-white">
-                Map View
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/stores" className="nav-link text-white">
-                Stores
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/reviews" className="nav-link text-white">
-                Reviews
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/products" className="nav-link text-white">
-                Products
-              </NavLink>
-            </li>
-          </ul>
-        </nav>
-        <div>
-          <hr className="border-light" />
-          <Button variant="danger" className="mt-3 w-100" onClick={onLogout}>
-            Logout
-          </Button>
-        </div>
+      <Col xs="auto" className="p-0">
+        <Sidebar onLogout={onLogout} />
       </Col>
 
-      {/* Main Content */}
-      <Col xs={10} className="content">
-        <div className="d-flex justify-content-between align-items-center p-3 border-bottom bg-white">
+      <Col className="content flex-grow-1">
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center p-3 border-bottom bg-white sticky-top">
           <Form.Control
             type="search"
             placeholder="Search by User, Store & Order"
@@ -107,7 +44,7 @@ function DashboardLayout({ onLogout, cart, addToCart, removeFromCart }) {
             <div
               className="position-relative"
               style={{ cursor: "pointer" }}
-              onClick={() => navigate("/cart")}
+              onClick={navigateToCart}
             >
               <FaShoppingCart size={22} className="text-danger" />
               {totalItems > 0 && (
@@ -123,6 +60,8 @@ function DashboardLayout({ onLogout, cart, addToCart, removeFromCart }) {
             <Image src="https://i.pravatar.cc/40" roundedCircle alt="profile" />
           </div>
         </div>
+
+        {/* Page content */}
         <div className="p-4">
           <Outlet />
         </div>
@@ -132,63 +71,67 @@ function DashboardLayout({ onLogout, cart, addToCart, removeFromCart }) {
 }
 
 function App() {
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cart, setCart] = useState({});
-  const [userAddress, setUserAddress] = useState(null);
 
+  // ✅ Load from localStorage on app start
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
     if (user) setIsLoggedIn(true);
+
     const savedCart = localStorage.getItem("cart");
     if (savedCart) setCart(JSON.parse(savedCart));
   }, []);
 
+  // ✅ Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("cart");
     setIsLoggedIn(false);
-    setCart({});
   };
 
+  const navigateToCart = () => {
+    navigate("/cart");
+  };
+
+  // ✅ Add to Cart
   const addToCart = (item) => {
+    const id = item._id || item.id;
     setCart((prev) => {
-      if (prev[item.id]) {
-        return {
-          ...prev,
-          [item.id]: { ...prev[item.id], qty: prev[item.id].qty + 1 },
-        };
-      }
-      return { ...prev, [item.id]: { ...item, qty: 1 } };
+      const existing = prev[id] || { ...item, qty: 0 };
+    const updatedCart = {
+        ...prev,
+        [id]: { ...existing, qty: existing.qty + 1 },
+      };
+      localStorage.setItem("cart", JSON.stringify(updatedCart)); // ✅ Save immediately
+      return updatedCart;
     });
   };
 
+  // ✅ Remove from Cart
   const removeFromCart = (item) => {
+    const id = item._id || item.id;
     setCart((prev) => {
-      if (!prev[item.id]) return prev;
-      const newQty = prev[item.id].qty - 1;
-      if (newQty <= 0) {
-        const { [item.id]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [item.id]: { ...prev[item.id], qty: newQty } };
+      if (!prev[id]) return prev;
+      const updated = { ...prev };
+      if (updated[id].qty <= 1) delete updated[id];
+      else updated[id].qty -= 1;
+
+      localStorage.setItem("cart", JSON.stringify(updated)); // ✅ Save immediately
+      return updated;
     });
   };
-
-  const clearCart = () => setCart({});
 
   return (
     <Container fluid className="g-0">
       <Routes>
         {!isLoggedIn ? (
           <>
-            <Route
-              path="/login"
-              element={<Login onLogin={() => setIsLoggedIn(true)} />}
-            />
+            <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-otp" element={<VerifyOtp />} />
@@ -201,8 +144,7 @@ function App() {
               <DashboardLayout
                 onLogout={handleLogout}
                 cart={cart}
-                addToCart={addToCart}
-                removeFromCart={removeFromCart}
+                navigateToCart={navigateToCart}
               />
             }
           >
@@ -210,26 +152,18 @@ function App() {
             <Route path="/customers" element={<Customers />} />
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/map" element={<MapView />} />
+
             <Route
               path="/stores"
-              element={
-                <Stores
-                  addToCart={addToCart}
-                  removeFromCart={removeFromCart}
-                  cart={cart}
-                />
-              }
+              element={<Stores addToCart={addToCart} removeFromCart={removeFromCart} cart={cart} />}
             />
+
             <Route path="/reviews" element={<Reviews />} />
             <Route
               path="/products"
-              element={
-                <Products
-                  addToCart={addToCart}
-                  setUserAddress={setUserAddress}
-                />
-              }
+              element={<Products addToCart={addToCart} removeFromCart={removeFromCart} cart={cart} />}
             />
+            <Route path="/settings" element={<Settings />} />
             <Route
               path="/cart"
               element={
@@ -237,12 +171,14 @@ function App() {
                   cart={cart}
                   addToCart={addToCart}
                   removeFromCart={removeFromCart}
-                  clearCart={clearCart}
-                  userAddress={userAddress}
+                  clearCart={() => {
+                    setCart({});
+                    localStorage.removeItem("cart");
+                  }}
                 />
               }
             />
-            <Route path="*" element={<h4>Welcome to E-Meat Dashboard</h4>} />
+            <Route path="*" element={<Navigate to="/orders" />} />
           </Route>
         )}
       </Routes>

@@ -4,7 +4,7 @@ import { Card, Button, Row, Col, Spinner, Dropdown, Container } from "react-boot
 import { useNavigate } from "react-router-dom";
 import { FaFilter } from "react-icons/fa";
 
-const Products = ({ addToCart, setUserAddress }) => {
+const Products = ({ addToCart, removeFromCart, cart }) => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,16 +46,16 @@ const Products = ({ addToCart, setUserAddress }) => {
     setFilteredProducts(filtered);
   };
 
+ const handleAddToCart = (product) => {
+  addToCart(product);
+  alert(`${product.name} added to cart!`);
+ };
+
   const handleOrderNow = (product) => {
     addToCart(product);
-    setUserAddress({ address: "", distanceKm: 0 });
     navigate("/cart");
   };
 
-  const handleAddToCart = (product) => {
-    addToCart(product);
-    alert(`${product.name} added to cart!`);
-  };
 
   if (loading) {
     return (

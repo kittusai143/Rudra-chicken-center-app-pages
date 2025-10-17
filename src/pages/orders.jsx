@@ -1,4 +1,3 @@
-// Orders.jsx
 import React, { useState, useEffect } from "react";
 import { Form, Button, Table, Card, Row, Col } from "react-bootstrap";
 import "./css/orders.css";
@@ -63,7 +62,9 @@ const Orders = () => {
       ...form,
       kgs: kgsNumber,
       price: kgsNumber * CHICKEN_PRICE_PER_KG,
+      userIdentifier: JSON.parse(localStorage.getItem("loggedInUser")).identifier, // add this
     };
+
 
     try {
       const res = await fetch("http://localhost:5000/api/orders", {
@@ -91,11 +92,12 @@ const Orders = () => {
 
   return (
     <div className="container my-4">
+      {/* Add Order Form */}
       <Card className="p-4 mb-4 shadow">
-        <h4 className="mb-3">Add New Order</h4>
+        <h4 className="mb-3 text-center text-md-start">Add New Order</h4>
         <Form onSubmit={handleSubmit}>
           <Row className="mb-3">
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>Order ID</Form.Label>
                 <Form.Control
@@ -105,10 +107,12 @@ const Orders = () => {
                   isInvalid={!!errors.id}
                   placeholder="Enter Order ID"
                 />
-                <Form.Control.Feedback type="invalid">{errors.id}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.id}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>Customer Name</Form.Label>
                 <Form.Control
@@ -118,10 +122,12 @@ const Orders = () => {
                   isInvalid={!!errors.customerName}
                   placeholder="Enter Name"
                 />
-                <Form.Control.Feedback type="invalid">{errors.customerName}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.customerName}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>Mobile</Form.Label>
                 <Form.Control
@@ -131,13 +137,15 @@ const Orders = () => {
                   isInvalid={!!errors.customerMobile}
                   placeholder="Enter Mobile"
                 />
-                <Form.Control.Feedback type="invalid">{errors.customerMobile}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.customerMobile}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
           </Row>
 
           <Row className="mb-3">
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>Email</Form.Label>
                 <Form.Control
@@ -147,10 +155,12 @@ const Orders = () => {
                   isInvalid={!!errors.customerEmail}
                   placeholder="Enter Email"
                 />
-                <Form.Control.Feedback type="invalid">{errors.customerEmail}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.customerEmail}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>Delivery Address</Form.Label>
                 <Form.Control
@@ -160,10 +170,12 @@ const Orders = () => {
                   isInvalid={!!errors.customerAddress}
                   placeholder="Enter Address"
                 />
-                <Form.Control.Feedback type="invalid">{errors.customerAddress}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.customerAddress}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col xs={12} md={4}>
               <Form.Group>
                 <Form.Label>KGs</Form.Label>
                 <Form.Control
@@ -174,12 +186,14 @@ const Orders = () => {
                   isInvalid={!!errors.kgs}
                   placeholder="Enter kgs"
                 />
-                <Form.Control.Feedback type="invalid">{errors.kgs}</Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">
+                  {errors.kgs}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
           </Row>
 
-          <Row className="mb-3">
+          <Row>
             <Col className="d-flex justify-content-end">
               <Button type="submit" className="btn-add-order">
                 Add Order
@@ -189,46 +203,49 @@ const Orders = () => {
         </Form>
       </Card>
 
+      {/* Orders List */}
       <Card className="p-3 shadow">
-        <h4 className="mb-3">Orders List</h4>
-        <Table bordered hover responsive>
-          <thead className="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Mobile</th>
-              <th>Email</th>
-              <th>Address</th>
-              <th>Product</th>
-              <th>KGs</th>
-              <th>Price</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length > 0 ? (
-              orders.map((o, idx) => (
-                <tr key={idx}>
-                  <td>{o.id}</td>
-                  <td>{o.customerName}</td>
-                  <td>{o.customerMobile}</td>
-                  <td>{o.customerEmail}</td>
-                  <td>{o.customerAddress}</td>
-                  <td>{o.productName}</td>
-                  <td>{o.kgs}</td>
-                  <td>₹{o.price}</td>
-                  <td>{o.status}</td>
-                </tr>
-              ))
-            ) : (
+        <h4 className="mb-3 text-center text-md-start">Orders List</h4>
+        <div className="table-responsive">
+          <Table bordered hover responsive>
+            <thead className="table-dark">
               <tr>
-                <td colSpan="9" className="text-center text-muted">
-                  No orders yet.
-                </td>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Product</th>
+                <th>KGs</th>
+                <th>Price</th>
+                <th>Status</th>
               </tr>
-            )}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {orders.length > 0 ? (
+                orders.map((o, idx) => (
+                  <tr key={idx}>
+                    <td>{o.id}</td>
+                    <td>{o.customerName}</td>
+                    <td>{o.customerMobile}</td>
+                    <td>{o.customerEmail}</td>
+                    <td>{o.customerAddress}</td>
+                    <td>{o.productName}</td>
+                    <td>{o.kgs}</td>
+                    <td>₹{o.price}</td>
+                    <td>{o.status}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="9" className="text-center text-muted">
+                    No orders yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        </div>
       </Card>
     </div>
   );

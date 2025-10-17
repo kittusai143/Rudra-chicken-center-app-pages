@@ -1,35 +1,26 @@
 import React, { useState } from "react";
-import {
-  Card,
-  Form,
-  Button,
-  InputGroup,
-  Row,
-  Col,
-} from "react-bootstrap";
+import { Card, Form, Button, InputGroup, Row, Col } from "react-bootstrap";
 import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import "./Register.css";
 
+// Vite env fallback
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
 export default function Register() {
-  const [formData, setFormData] = useState({ identifier: "", password: "" }); // identifier = email or phone
+  const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ identifier: "", password: "" });
-
   const navigate = useNavigate();
 
-  const validateEmail = (email) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const validatePhone = (phone) =>
-    /^[0-9]{10}$/.test(phone); // 10-digit phone number
-
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePhone = (phone) => /^[0-9]{10}$/.test(phone);
   const validatePassword = (password) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(password);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((s) => ({ ...s, [name]: value }));
 
     if (name === "identifier") {
       setErrors((prev) => ({
@@ -54,47 +45,47 @@ export default function Register() {
     }
   };
 
-  const handleRegister = async () => {
-    let newErrors = {};
-    if (!formData.identifier) {
-      newErrors.identifier = "This field is required";
-    } else if (!validateEmail(formData.identifier) && !validatePhone(formData.identifier)) {
-      newErrors.identifier = "Enter a valid email or 10-digit phone number";
-    }
+  const handleRegister = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
 
-    if (!formData.password) {
-      newErrors.password = "This field is required";
-    } else if (!validatePassword(formData.password)) {
-      newErrors.password =
-        "Password must be 8+ chars, include uppercase, lowercase, number & special char";
-    }
+    const newErrors = {};
+    if (!formData.identifier) newErrors.identifier = "This field is required";
+    else if (!validateEmail(formData.identifier) && !validatePhone(formData.identifier))
+      newErrors.identifier = "Enter a valid email or 10-digit phone number";
+
+    if (!formData.password) newErrors.password = "This field is required";
+    else if (!validatePassword(formData.password))
+      newErrors.password = "Password must be 8+ chars, include uppercase, lowercase, number & special char";
 
     setErrors(newErrors);
-    if (Object.values(newErrors).some((err) => err)) return;
+    if (Object.values(newErrors).some(Boolean)) return;
 
     try {
-      const res = await fetch("http://localhost:5000/register", {
+      const res = await fetch(`${API_BASE_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          identifier: formData.identifier,
-          password: formData.password,
-        }),
+        body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text || "Server response not JSON" };
+      }
 
       if (res.ok) {
         alert(data.message || "✅ Registered successfully!");
         navigate("/login");
       } else {
-        alert(data.error || "⚠️ Something went wrong");
+        alert(`⚠️ ${data.error || "Registration failed"}`);
       }
     } catch (err) {
       console.error("Register error:", err);
-      alert("❌ Server error, try again later.");
+      alert("❌ Server not responding. Please try again later.");
     }
-  }
+  };
 
   return (
     <div className="register-bg d-flex justify-content-center align-items-center vh-100">
@@ -103,77 +94,56 @@ export default function Register() {
           <Card className="p-4 register-card">
             <h5 className="mb-3 text-center">Create Account</h5>
 
-            {/* Email / Phone */}
-            <Form.Group className="mb-3">
-              <Form.Label>Email or Phone Number</Form.Label>
-              <InputGroup>
-                <InputGroup.Text>
-                  <FaUser />
-                </InputGroup.Text>
-                <Form.Control
-                  name="identifier"
-                  type="text"
-                  placeholder="Enter email or phone number"
-                  value={formData.identifier}
-                  onChange={handleChange}
-                  className={
-                    errors.identifier
-                      ? "is-invalid"
-                      : formData.identifier
-                      ? "is-valid"
-                      : ""
-                  }
-                />
-              </InputGroup>
-              {errors.identifier && (
-                <div className="invalid-feedback d-block">{errors.identifier}</div>
-              )}
-            </Form.Group>
+            <Form onSubmit={handleRegister}>
+              <Form.Group className="mb-3">
+                <Form.Label>Email or Phone Number</Form.Label>
+                <InputGroup>
+                  <InputGroup.Text>
+                    <FaUser />
+                  </InputGroup.Text>
+                  <Form.Control
+                    name="identifier"
+                    type="text"
+                    placeholder="Enter email or phone number"
+                    value={formData.identifier}
+                    onChange={handleChange}
+                    className={errors.identifier ? "is-invalid" : formData.identifier ? "is-valid" : ""}
+                  />
+                </InputGroup>
+                {errors.identifier && <div className="invalid-feedback d-block">{errors.identifier}</div>}
+              </Form.Group>
 
-            {/* Password */}
-            <Form.Group className="mb-3">
-              <Form.Label>Password</Form.Label>
-              <InputGroup>
-                <InputGroup.Text>
-                  <FaLock />
-                </InputGroup.Text>
-                <Form.Control
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={
-                    errors.password
-                      ? "is-invalid"
-                      : formData.password
-                      ? "is-valid"
-                      : ""
-                  }
-                />
-                <InputGroup.Text
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </InputGroup.Text>
-              </InputGroup>
-              {errors.password && (
-                <div className="invalid-feedback d-block">
-                  {errors.password}
-                </div>
-              )}
-            </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Password</Form.Label>
+                <InputGroup>
+                  <InputGroup.Text>
+                    <FaLock />
+                  </InputGroup.Text>
+                  <Form.Control
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={errors.password ? "is-invalid" : formData.password ? "is-valid" : ""}
+                  />
+                  <InputGroup.Text style={{ cursor: "pointer" }} onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </InputGroup.Text>
+                </InputGroup>
+                {errors.password && <div className="invalid-feedback d-block">{errors.password}</div>}
+              </Form.Group>
 
-            <Button className="btn-signin w-100 mb-2" onClick={handleRegister}>
-              Register
-            </Button>
-
-            <div className="text-center mt-2">
-              <Button variant="link" onClick={() => navigate("/login")}>
-                Back to Login
+              <Button className="btn-signin w-100 mb-2" type="submit">
+                Register
               </Button>
-            </div>
+
+              <div className="text-center mt-2">
+                <Button variant="link" onClick={() => navigate("/login")} type="button">
+                  Back to Login
+                </Button>
+              </div>
+            </Form>
           </Card>
         </Col>
       </Row>

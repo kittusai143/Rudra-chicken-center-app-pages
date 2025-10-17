@@ -1,6 +1,6 @@
 .btn-add-order {
-  width: 120px;       /* button width */
-  padding: 6px 12px;  /* button padding */
+  width: 120px;
+  padding: 6px 12px;
   background: linear-gradient(90deg, #9d5df5, #4da6ff);
   color: #fff;
   border-radius: 8px;
@@ -11,4 +11,38 @@
 
 .btn-add-order:hover {
   opacity: 0.9;
+}
+
+/* ✅ Responsive Adjustments */
+@media (max-width: 992px) {   /* Tablets */
+  .btn-add-order {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 576px) {   /* Mobile */
+  .container {
+    padding: 0 10px;
+  }
+
+  .btn-add-order {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  table thead th {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  table tbody td {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}
+
+/* ✅ Make Table Scrollable Horizontally on Small Screens */
+.table-responsive {
+  overflow-x: auto;
 }
